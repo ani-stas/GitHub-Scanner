@@ -1,4 +1,5 @@
 ## Repositories query example:
+```javascript
 query ReposQuery {
   repositories {
     id
@@ -7,8 +8,10 @@ query ReposQuery {
     owner
   }
 }
+```
 
 ## Repository Details query example:
+```javascript
 query RepoDetailsQuery($id: ID!, $filePath: String!) {
   repositoryDetails(id: $id, filePath: $filePath) {
     name
@@ -22,9 +25,12 @@ query RepoDetailsQuery($id: ID!, $filePath: String!) {
     yamlContent
   }
 }
+```
 
 ## Variables example:
+```json
 {
   "id": "R_kgDONFWhJg",
   "filePath": "testdata/kubeconfig-2.yaml"
 }
+```
