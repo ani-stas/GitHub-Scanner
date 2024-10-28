@@ -174,7 +174,7 @@ const getWebhooks = async (
   repoOwner: string,
   repoName: string
 ): Promise<IWebhookResponse[]> => {
-  const webhooksResponse = await fetch(
+  const response = await fetch(
     `https://api.github.com/repos/${repoOwner}/${repoName}/hooks`,
     {
       method: "GET",
@@ -184,8 +184,8 @@ const getWebhooks = async (
     }
   );
 
-  const webhooksData = (await webhooksResponse.json()) as IWebhookResponse[];
-  return webhooksData.filter((elem) => elem.active);
+  const responseJson = (await response.json()) as IWebhookResponse[];
+  return responseJson.filter((elem) => elem.active);
 };
 
 const resolvers = {
