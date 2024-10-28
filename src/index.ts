@@ -23,25 +23,25 @@ enum FileType {
 
 const typeDefs = `#graphql
   type Webhook {
-    id: ID
-    url: String
-    active: Boolean
-    events: [String]
-    createdAt: String
-    updatedAt: String
+    id: ID!
+    url: String!
+    active: Boolean!
+    events: [String!]!
+    createdAt: String!
+    updatedAt: String!
   }
   type Repository {
-    id: ID
-    name: String
-    size: Int
-    owner: String
-    isPrivate: Boolean
-    filesAmount: Int
+    id: ID!
+    name: String!
+    size: Int!
+    owner: String!
+    isPrivate: Boolean!
+    filesAmount: Int!
     yamlContent: String
-    activeWebhooks: [Webhook] 
+    activeWebhooks: [Webhook!]!
   }
   type Query {
-    repositories: [Repository],
+    repositories: [Repository!]!
     repositoryDetails(id: ID!, filePath: String!): Repository
   }
 `;
