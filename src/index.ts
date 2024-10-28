@@ -2,7 +2,7 @@ import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 import {
   IFetchRepositoriesResult,
-  IFile,
+  IFetchRepositoryDetailsResult,
   IFilesResponse,
   IRepositoriesResponse,
   IRepositoryDetailsResponse,
@@ -46,7 +46,7 @@ const typeDefs = `#graphql
   }
 `;
 
-const fetchRepositories = async () => {
+const fetchRepositories = async (): Promise<IFetchRepositoriesResult[]> => {
   const reposResponse = await fetch(GITHUB_GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -90,7 +90,10 @@ const fetchRepositories = async () => {
   return mappedResult;
 };
 
-const fetchRepositoryDetails = async (id: string, filePath: string) => {
+const fetchRepositoryDetails = async (
+  id: string,
+  filePath: string
+): Promise<IFetchRepositoryDetailsResult> => {
   const repoDetailsResponse = await fetch(GITHUB_GRAPHQL_URL, {
     method: "POST",
     headers: {
@@ -132,8 +135,25 @@ const fetchRepositoryDetails = async (id: string, filePath: string) => {
     name: repoName,
   }: { owner: { login: string }; name: string } = repoDetailsJson.data.node;
 
-  const filesResponse = await fetch(
-    `https://api.github.com/repos/${repoOwner.login}/${repoName}/git/trees/main?recursive=1`,
+  const filesAmount = await getRepositoryFiles(repoOwner.login, repoName);
+  const activeWebhooks = await getWebhooks(repoOwner.login, repoName);
+
+  return {
+    ...repoDetailsJson.data.node,
+    owner: repoDetailsJson.data.node.owner.login,
+    size: repoDetailsJson.data.node.diskUsage,
+    yamlContent: repoDetailsJson.data.node.fileObject?.text || null,
+    filesAmount,
+    activeWebhooks,
+  };
+};
+
+const getRepositoryFiles = async (
+  repoOwner: string,
+  repoName: string
+): Promise<number> => {
+  const response = await fetch(
+    `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees/main?recursive=1`,
     {
       method: "GET",
       headers: {
@@ -142,17 +162,20 @@ const fetchRepositoryDetails = async (id: string, filePath: string) => {
     }
   );
 
-  const filesResponseJson = (await filesResponse.json()) as IFilesResponse;
-  const filesAmount: number = filesResponseJson.tree.filter(
+  const responseJson = (await response.json()) as IFilesResponse;
+  const filteredFiles = responseJson.tree.filter(
     (item) => item.type === FileType.BLOB
-  ).length;
+  );
 
-  let yamlContent = null;
-  const fileObject: IFile = repoDetailsJson.data.node.fileObject;
-  if (fileObject) yamlContent = fileObject.text;
+  return filteredFiles.length;
+};
 
+const getWebhooks = async (
+  repoOwner: string,
+  repoName: string
+): Promise<IWebhookResponse[]> => {
   const webhooksResponse = await fetch(
-    `https://api.github.com/repos/${repoOwner.login}/${repoName}/hooks`,
+    `https://api.github.com/repos/${repoOwner}/${repoName}/hooks`,
     {
       method: "GET",
       headers: {
@@ -162,18 +185,7 @@ const fetchRepositoryDetails = async (id: string, filePath: string) => {
   );
 
   const webhooksData = (await webhooksResponse.json()) as IWebhookResponse[];
-  const activeWebhooks: IWebhookResponse[] = webhooksData.filter(
-    (elem) => elem.active
-  );
-
-  return {
-    ...repoDetailsJson.data.node,
-    owner: repoDetailsJson.data.node.owner.login,
-    size: repoDetailsJson.data.node.diskUsage,
-    filesAmount,
-    yamlContent,
-    activeWebhooks,
-  };
+  return webhooksData.filter((elem) => elem.active);
 };
 
 const resolvers = {
